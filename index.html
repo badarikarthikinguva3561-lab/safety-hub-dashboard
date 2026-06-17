@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSCMR Secure Safety Hub</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; }
+        .container { max-width: 650px; margin: auto; background: #2a2a2a; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        
+        /* Login Screen Styles */
+        #login-screen { display: block; }
+        .input-field { width: 80%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px; }
+        .btn-login { padding: 12px 30px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin-top: 10px; }
+        #login-error { color: #ff4444; display: none; margin-top: 10px; }
+
+        /* Dashboard Styles */
+        #dashboard-screen { display: none; }
+        img { width: 100%; border-radius: 8px; border: 3px solid #ff4444; min-height: 300px; background: #000; }
+        .controls { display: flex; justify-content: space-around; margin: 30px 0; }
+        .toggle-btn { padding: 15px 30px; font-size: 18px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        .btn-off { background-color: #555; color: white; }
+        .btn-on { background-color: #ff4444; color: white; box-shadow: 0 0 15px #ff4444; }
+        
+        /* Email Section */
+        .email-section { background: #333; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .btn-logout { background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; float: right; margin-bottom: 10px; }
+        #success-msg { color: #28a745; display: none; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="login-screen">
+        <h2>🔒 Admin Login</h2>
+        <p>Enter your credentials to access the Safety Hub</p>
+        <input type="email" id="auth-email" class="input-field" placeholder="Admin Email"><br>
+        <input type="password" id="auth-password" class="input-field" placeholder="Password"><br>
+        <button class="btn-login" onclick="loginAdmin()">Login</button>
+        <div id="login-error">Invalid Email or Password</div>
+    </div>
+
+    <div id="dashboard-screen">
+        <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        <h2>🛰️ Live Hazard Monitor</h2>
+        <p>Live Threat Visualizer (Auto-Updates every 5s)</p>
+        
+        <img id="live-camera" src="https://via.placeholder.com/600x400?text=SYSTEM+SAFE+-+NO+FIRE+DETECTED" alt="Live Camera Feed">
+
+        <div class="controls">
+            <button id="fan-btn" class="toggle-btn btn-off" onclick="toggleHardware('fan')">Exhaust Fan: OFF</button>
+            <button id="light-btn" class="toggle-btn btn-off" onclick="toggleHardware('light')">Strobe Light: OFF</button>
+        </div>
+
+        <div class="email-section">
+            <h3>Subscribe to Emergency Alerts</h3>
+            <form id="email-form">
+                <input type="email" id="email-input" class="input-field" placeholder="Enter user email address" required>
+                <button type="submit" class="btn-login" style="margin:0; padding: 12px;">Add Email</button>
+            </form>
+            <div id="success-msg">✅ Success! Email added to Google Sheet.</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ✅ YOUR EXACT FIREBASE CONFIGURATION
+    const firebaseConfig = {
+        apiKey: "AIzaSyAq8jGLPA-hsAsNjAPXd_oSqQfKEdDkWcA",
+        authDomain: "fire-and-gas-alert-system.firebaseapp.com",
+        databaseURL: "https://fire-and-gas-alert-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "fire-and-gas-alert-system",
+        storageBucket: "fire-and-gas-alert-system.firebasestorage.app",
+        messagingSenderId: "678355474003",
+        appId: "1:678355474003:web:e6b8fbc0afa7d79bbad8a6"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // --- AUTHENTICATION LOGIC ---
+    function loginAdmin() {
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-password').value;
+        
+        auth.signInWithEmailAndPassword(email, pass)
+            .catch((error) => {
+                document.getElementById('login-error').style.display = 'block';
+                document.getElementById('login-error').innerText = error.message;
+            });
+    }
+
+    function logoutAdmin() {
+        auth.signOut();
+    }
+
+    // Monitor Auth State (Shows/Hides Dashboard automatically)
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'block';
+            startDashboardListeners(); // Only load data if logged in
+        } else {
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('dashboard-screen').style.display = 'none';
+        }
+    });
+
+    // --- DASHBOARD DATA LOGIC ---
+    function startDashboardListeners() {
+        // 1. Image Auto-Updater (Listens to Google Apps Script)
+        database.ref('/latest_image').on('value', (snapshot) => {
+            const imageUrl = snapshot.val();
+            if (imageUrl) document.getElementById('live-camera').src = imageUrl;
+        });
+
+        // 2. Hardware Toggles Reader
+        ['fan', 'light'].forEach(device => {
+            database.ref('/hardware/' + device).on('value', (snapshot) => {
+                const state = snapshot.val();
+                const btn = document.getElementById(device + '-btn');
+                if (state) {
+                    btn.className = 'toggle-btn btn-on';
+                    btn.innerText = (device === 'fan' ? 'Exhaust Fan' : 'Strobe Light') + ': ON';
+                } else {
+                    btn.className = 'toggle-btn btn-off';
+                    btn.innerText = (device === 'fan' ? 'Exhaust Fan' : 'Strobe Light') + ': OFF';
+                }
+            });
+        });
+    }
+
+    // Hardware Toggle Sender (Pushes to Firebase, ESP32 reads this)
+    function toggleHardware(device) {
+        const ref = database.ref('/hardware/' + device);
+        ref.once('value').then((snapshot) => {
+            ref.set(!(snapshot.val() || false)); 
+        });
+    }
+
+    // --- GOOGLE APPS SCRIPT EMAIL SUBMISSION ---
+    // ⚠️ Ensure this is your exact Web App URL from Google Apps Script
+    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbwmsxBTAPA2c419382zQorhgFywXGJAIrqOS-IyfoU9xdv1h9UkSlSF8gnnMZOWhvjLaQ/exec";
+
+    document.getElementById('email-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email-input').value;
+        
+        fetch(googleScriptUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'email=' + encodeURIComponent(email)
+        }).then(() => {
+            document.getElementById('success-msg').style.display = 'block';
+            document.getElementById('email-input').value = '';
+            setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 4000);
+        });
+    });
+</script>
+
+</body>
+</html>
