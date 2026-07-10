@@ -10,31 +10,33 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; margin: 0; }
-        .container { max-width: 650px; margin: auto; background: #2a2a2a; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; margin: 0; }
+        .container { max-width: 650px; margin: auto; background: #2a2a2a; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
         
         /* Login Screen Styles */
         #login-screen { display: block; }
-        .input-field { width: 80%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px; }
-        .btn-login { padding: 12px 30px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin-top: 10px; font-weight: bold; }
-        .btn-login:hover { background: #2563eb; }
-        #login-error { color: #ef4444; display: none; margin-top: 10px; font-weight: bold; }
+        .input-field { width: 80%; padding: 14px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; background: #333; color: white; box-sizing: border-box; }
+        .input-field:focus { outline: 2px solid #3b82f6; }
+        .btn-login { padding: 14px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; margin-top: 15px; font-weight: bold; width: 80%; transition: 0.2s; }
+        .btn-login:hover { background: #2563eb; transform: scale(0.98); }
+        #login-error { color: #ef4444; display: none; margin-top: 15px; font-weight: bold; }
 
         /* Dashboard Styles */
         #dashboard-screen { display: none; }
-        img { width: 100%; border-radius: 8px; border: 3px solid #ef4444; min-height: 300px; background: #000; object-fit: contain; }
+        img { width: 100%; border-radius: 8px; border: 3px solid #ef4444; min-height: 250px; background: #000; object-fit: contain; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
         
         .controls { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; margin: 30px 0; }
-        .toggle-btn { padding: 15px 25px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; flex-grow: 1; min-width: 200px; }
+        .toggle-btn { padding: 18px 25px; font-size: 18px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: 0.3s; flex-grow: 1; min-width: 200px; }
         .btn-off { background-color: #475569; color: white; }
         .btn-on { background-color: #ef4444; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
         
         /* Email Section */
-        .email-section { background: #333; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #444; }
-        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; float: right; margin-bottom: 10px; font-weight: bold; }
+        .email-section { background: #333; padding: 25px; border-radius: 12px; margin-top: 25px; border: 1px solid #444; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; float: right; margin-bottom: 10px; font-weight: bold; transition: 0.2s; }
+        .btn-logout:hover { background: #dc2626; }
         #success-msg { color: #10b981; display: none; margin-top: 15px; font-weight: bold; }
         
-        hr { border: 1px solid #444; margin: 25px 0; }
+        hr { border: 0; height: 1px; background: #444; margin: 30px 0; }
     </style>
 </head>
 <body>
@@ -42,8 +44,8 @@
 <div class="container">
     
     <div id="login-screen">
-        <h2>🔒 PSCMR Admin Login</h2>
-        <p>Enter your credentials to access the Safety Hub</p>
+        <h2 style="color: #3b82f6;">🔒 PSCMR Admin Login</h2>
+        <p style="color: #ccc; margin-bottom: 25px;">Authenticate to access the Global Safety Hub</p>
         <input type="email" id="auth-email" class="input-field" placeholder="Admin Email"><br>
         <input type="password" id="auth-password" class="input-field" placeholder="Password"><br>
         <button class="btn-login" onclick="loginAdmin()">Login</button>
@@ -52,14 +54,15 @@
 
     <div id="dashboard-screen">
         <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
-        <h2>🛰️ Remote Hazard Monitor</h2>
-        <p>Live Threat Visualizer</p>
+        <h2 style="color: #ef4444; text-align: left; margin-top: 0;">🛰️ Remote Hub</h2>
+        <p style="text-align: left; color: #ccc;">Live Hazard Evidence Visualizer</p>
         
         <img id="live-camera" src="https://via.placeholder.com/600x400?text=SYSTEM+SAFE+-+NO+ALERTS" alt="Live Camera Feed">
 
         <hr>
         
-        <h3>⚙️ Hardware Overrides</h3>
+        <h3 style="text-align: left;">⚙️ Global Hardware Overrides</h3>
+        <p style="text-align: left; color: #ccc; font-size: 14px; margin-top: -10px;">Toggle relays from anywhere in the world.</p>
         <div class="controls">
             <button id="fan-btn" class="toggle-btn btn-off" onclick="toggleHardware('fan')">Exhaust Fan: OFF</button>
             <button id="light-btn" class="toggle-btn btn-off" onclick="toggleHardware('light')">Strobe Light: OFF</button>
@@ -68,13 +71,13 @@
         <hr>
 
         <div class="email-section">
-            <h3>📬 Subscribe to Emergency Alerts</h3>
-            <p style="font-size: 14px; color: #ccc;">Add an email to the emergency broadcast list.</p>
+            <h3>📬 Emergency Broadcast List</h3>
+            <p style="font-size: 14px; color: #ccc; margin-bottom: 20px;">Add personnel to the Google Sheets emergency email roster.</p>
             <form id="email-form">
                 <input type="email" id="email-input" class="input-field" style="width: 70%;" placeholder="Enter user email address" required>
-                <button type="submit" class="btn-login" style="margin: 0; padding: 12px 20px;">Add</button>
+                <button type="submit" class="btn-login" style="margin: 0; padding: 14px 20px; width: auto;">Add</button>
             </form>
-            <div id="success-msg">✅ Success! Email added to Google Sheet.</div>
+            <div id="success-msg">✅ Success! Email registered securely.</div>
         </div>
     </div>
 
@@ -91,6 +94,7 @@
         messagingSenderId: "678355474003",
         appId: "1:678355474003:web:e6b8fbc0afa7d79bbad8a6"
     };
+    
     
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
@@ -140,6 +144,8 @@
             database.ref('hardware/' + device).on('value', (snapshot) => {
                 const state = snapshot.val();
                 const btn = document.getElementById(device + '-btn');
+                
+                // Real-time button UI updates
                 if (state === true) {
                     btn.className = 'toggle-btn btn-on';
                     btn.innerText = (device === 'fan' ? 'Exhaust Fan' : 'Strobe Light') + ': ON';
@@ -151,7 +157,7 @@
         });
     }
 
-    // Hardware Toggle Sender (Pushes to Firebase, ESP32 will read this later)
+    // Hardware Toggle Sender (Pushes to Firebase Database, Main ESP32 reads it instantly)
     function toggleHardware(device) {
         const ref = database.ref('hardware/' + device);
         ref.once('value').then((snapshot) => {
@@ -161,7 +167,6 @@
     }
 
     // --- GOOGLE APPS SCRIPT EMAIL SUBMISSION ---
-    // ⚠️ Ensure this is your most recent Web App URL
     const googleScriptUrl = "https://script.google.com/macros/s/AKfycbydQafVlc5MA1BdochHFu80LFuo2ZGq3eJFVOkOjxJZHRiJZRvM2Rgt0iI22Aa9gBektA/exec";
 
     document.getElementById('email-form').addEventListener('submit', function(e) {
@@ -173,7 +178,7 @@
         btn.innerText = "Sending...";
         btn.disabled = true;
         
-        // 🚨 mode: 'no-cors' prevents browser security blocks when posting to Google Scripts
+        // mode: 'no-cors' prevents browser security blocks when posting to Google Scripts
         fetch(googleScriptUrl, {
             method: 'POST',
             mode: 'no-cors', 
