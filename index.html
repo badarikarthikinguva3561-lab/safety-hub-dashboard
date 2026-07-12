@@ -1,203 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSCMR Secure Safety Hub</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSCMR Safety Hub — Remote Control</title>
+<style>
+  :root {
+    --bg: #0b0e11;
+    --panel: #14181d;
+    --panel-2: #1b2027;
+    --line: #262c34;
+    --text: #edeff2;
+    --text-dim: #8b95a1;
+    --amber: #f5a623;
+    --amber-dim: #6b4b12;
+    --red: #e5484d;
+    --red-dim: #4a1616;
+    --green: #3ecf8e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
 
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 20px; margin: 0; }
-        .container { max-width: 650px; margin: auto; background: #2a2a2a; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
-        
-        /* Login Screen Styles */
-        #login-screen { display: block; }
-        .input-field { width: 80%; padding: 14px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; background: #333; color: white; box-sizing: border-box; }
-        .input-field:focus { outline: 2px solid #3b82f6; }
-        .btn-login { padding: 14px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; margin-top: 15px; font-weight: bold; width: 80%; transition: 0.2s; }
-        .btn-login:hover { background: #2563eb; transform: scale(0.98); }
-        #login-error { color: #ef4444; display: none; margin-top: 15px; font-weight: bold; }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .brand {
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 18px;
+  }
+  .brand span { color: var(--amber); }
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    color: var(--text-dim);
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-dim);
+  }
+  .dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.offline { background: var(--red); }
 
-        /* Dashboard Styles */
-        #dashboard-screen { display: none; }
-        img { width: 100%; border-radius: 8px; border: 3px solid #ef4444; min-height: 250px; background: #000; object-fit: contain; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
-        
-        .controls { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; margin: 30px 0; }
-        .toggle-btn { padding: 18px 25px; font-size: 18px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: 0.3s; flex-grow: 1; min-width: 200px; }
-        .btn-off { background-color: #475569; color: white; }
-        .btn-on { background-color: #ef4444; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
-        
-        /* Email Section */
-        .email-section { background: #333; padding: 25px; border-radius: 12px; margin-top: 25px; border: 1px solid #444; }
-        .btn-logout { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; float: right; margin-bottom: 10px; font-weight: bold; transition: 0.2s; }
-        .btn-logout:hover { background: #dc2626; }
-        #success-msg { color: #10b981; display: none; margin-top: 15px; font-weight: bold; }
-        
-        hr { border: 0; height: 1px; background: #444; margin: 30px 0; }
-    </style>
+  .alert-banner {
+    display: none;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    color: #ffb4b4;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .alert-banner a { color: #ffb4b4; }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 28px 0 10px;
+  }
+
+  .relay-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .relay-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .relay-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .relay-name {
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .relay-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .led {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #333;
+    border: 1px solid #000;
+  }
+  .led.on { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .led.pending { background: var(--text-dim); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .switch-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .switch-btn:active { transform: scale(0.98); }
+  .switch-btn.on {
+    background: var(--amber-dim);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .switch-btn:disabled { opacity: 0.5; cursor: wait; }
+
+  .telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .metric-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .metric-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .metric-value {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .metric-value.safe { color: var(--green); }
+  .metric-value.warn { color: var(--red); }
+
+  .image-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 12px;
+    display: none;
+  }
+  .image-card img {
+    width: 100%;
+    border-radius: 4px;
+    display: block;
+  }
+  .image-caption {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 8px;
+  }
+
+  .footer-note {
+    margin-top: 32px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="container">
-    
-    <div id="login-screen">
-        <h2 style="color: #3b82f6;">🔒 PSCMR Admin Login</h2>
-        <p style="color: #ccc; margin-bottom: 25px;">Authenticate to access the Global Safety Hub</p>
-        <input type="email" id="auth-email" class="input-field" placeholder="Admin Email"><br>
-        <input type="password" id="auth-password" class="input-field" placeholder="Password"><br>
-        <button class="btn-login" onclick="loginAdmin()">Login</button>
-        <div id="login-error">Invalid Email or Password</div>
-    </div>
+  <div class="topbar">
+    <div class="brand">PSCMR <span>SAFETY HUB</span></div>
+    <div class="conn"><span class="dot" id="connDot"></span><span id="connText">Connecting…</span></div>
+  </div>
 
-    <div id="dashboard-screen">
-        <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
-        <h2 style="color: #ef4444; text-align: left; margin-top: 0;">🛰️ Remote Hub</h2>
-        <p style="text-align: left; color: #ccc;">Live Hazard Evidence Visualizer</p>
-        
-        <img id="live-camera" src="https://via.placeholder.com/600x400?text=SYSTEM+SAFE+-+NO+ALERTS" alt="Live Camera Feed">
+  <div class="alert-banner" id="alertBanner">
+    <span id="alertText"></span>
+  </div>
 
-        <hr>
-        
-        <h3 style="text-align: left;">⚙️ Global Hardware Overrides</h3>
-        <p style="text-align: left; color: #ccc; font-size: 14px; margin-top: -10px;">Toggle relays from anywhere in the world.</p>
-        <div class="controls">
-            <button id="fan-btn" class="toggle-btn btn-off" onclick="toggleHardware('fan')">Exhaust Fan: OFF</button>
-            <button id="light-btn" class="toggle-btn btn-off" onclick="toggleHardware('light')">Strobe Light: OFF</button>
+  <div class="section-label">Relay control</div>
+  <div class="relay-grid">
+    <div class="relay-card">
+      <div class="relay-head">
+        <div>
+          <div class="relay-name">Exhaust fan</div>
+          <div class="relay-sub">RELAY 1</div>
         </div>
-
-        <hr>
-
-        <div class="email-section">
-            <h3>📬 Emergency Broadcast List</h3>
-            <p style="font-size: 14px; color: #ccc; margin-bottom: 20px;">Add personnel to the Google Sheets emergency email roster.</p>
-            <form id="email-form">
-                <input type="email" id="email-input" class="input-field" style="width: 70%;" placeholder="Enter user email address" required>
-                <button type="submit" class="btn-login" style="margin: 0; padding: 14px 20px; width: auto;">Add</button>
-            </form>
-            <div id="success-msg">✅ Success! Email registered securely.</div>
-        </div>
+        <div class="led" id="led1"></div>
+      </div>
+      <button class="switch-btn" id="btn1" onclick="toggleRelay(1)">Turn on</button>
     </div>
+    <div class="relay-card">
+      <div class="relay-head">
+        <div>
+          <div class="relay-name">Strobe light</div>
+          <div class="relay-sub">RELAY 2</div>
+        </div>
+        <div class="led" id="led2"></div>
+      </div>
+      <button class="switch-btn" id="btn2" onclick="toggleRelay(2)">Turn on</button>
+    </div>
+  </div>
 
+  <div class="section-label">Live telemetry</div>
+  <div class="telemetry-grid">
+    <div class="metric-card">
+      <div class="metric-label">Gas level (MQ-2)</div>
+      <div class="metric-value safe" id="gasValue">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Last alert</div>
+      <div class="metric-value" id="alertValue" style="font-size:16px;">None</div>
+    </div>
+  </div>
+
+  <div class="image-card" id="imageCard">
+    <img id="latestImage" src="" alt="Latest capture from hazard camera">
+    <div class="image-caption">Latest capture from hazard event</div>
+  </div>
+
+  <div class="footer-note">Updates every 3s · Firebase Realtime Database</div>
 </div>
 
 <script>
-    // --- FIREBASE CONFIGURATION ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyAq8jGLPA-hsAsNjAPXd_oSqQfKEdDkWcA",
-        authDomain: "fire-and-gas-alert-system.firebaseapp.com",
-        databaseURL: "https://fire-and-gas-alert-system-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "fire-and-gas-alert-system",
-        storageBucket: "fire-and-gas-alert-system.firebasestorage.app",
-        messagingSenderId: "678355474003",
-        appId: "1:678355474003:web:e6b8fbc0afa7d79bbad8a6"
-    };
-    
-    
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const database = firebase.database();
+  const FIREBASE_URL = "https://fire-and-gas-alert-system-default-rtdb.asia-southeast1.firebasedatabase.app";
+  const FIREBASE_SECRET = "RppTvvRdF0NArjTxeAZIr2vJWaCOZ6L7S5xuYNrm";
 
-    // --- AUTHENTICATION LOGIC ---
-    function loginAdmin() {
-        const email = document.getElementById('auth-email').value;
-        const pass = document.getElementById('auth-password').value;
-        
-        auth.signInWithEmailAndPassword(email, pass)
-            .catch((error) => {
-                document.getElementById('login-error').style.display = 'block';
-                document.getElementById('login-error').innerText = error.message;
-            });
-    }
+  let pending1 = false;
+  let pending2 = false;
+  let lastKnown1 = false;
+  let lastKnown2 = false;
 
-    function logoutAdmin() {
-        auth.signOut();
-    }
+  async function fbGet(path) {
+    const res = await fetch(`${FIREBASE_URL}/${path}.json?auth=${FIREBASE_SECRET}`);
+    if (!res.ok) throw new Error("fetch failed");
+    return res.json();
+  }
 
-    // Monitor Auth State (Shows/Hides Dashboard automatically)
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('dashboard-screen').style.display = 'block';
-            startDashboardListeners(); // Only load data if logged in
+  async function fbPatch(path, body) {
+    const res = await fetch(`${FIREBASE_URL}/${path}.json?auth=${FIREBASE_SECRET}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    return res.ok;
+  }
+
+  async function toggleRelay(num) {
+    const desired = num === 1 ? !lastKnown1 : !lastKnown2;
+    if (num === 1) { pending1 = true; } else { pending2 = true; }
+    renderRelays();
+    await fbPatch("relay_control", { ["relay" + num]: desired });
+  }
+
+  function renderRelays() {
+    const btn1 = document.getElementById("btn1");
+    const btn2 = document.getElementById("btn2");
+    const led1 = document.getElementById("led1");
+    const led2 = document.getElementById("led2");
+
+    led1.className = "led" + (pending1 ? " pending" : lastKnown1 ? " on" : "");
+    led2.className = "led" + (pending2 ? " pending" : lastKnown2 ? " on" : "");
+
+    btn1.textContent = lastKnown1 ? "Turn off" : "Turn on";
+    btn2.textContent = lastKnown2 ? "Turn off" : "Turn on";
+    btn1.className = "switch-btn" + (lastKnown1 ? " on" : "");
+    btn2.className = "switch-btn" + (lastKnown2 ? " on" : "");
+    btn1.disabled = pending1;
+    btn2.disabled = pending2;
+  }
+
+  async function poll() {
+    try {
+      const [status, state] = await Promise.all([
+        fbGet("relay_status").catch(() => null),
+        fbGet("system_state").catch(() => null)
+      ]);
+
+      if (status) {
+        if (pending1 && status.relay1 !== undefined && status.relay1 === lastKnown1) {
+          // still catching up, keep pending
         } else {
-            document.getElementById('login-screen').style.display = 'block';
-            document.getElementById('dashboard-screen').style.display = 'none';
+          pending1 = false;
         }
-    });
+        if (pending2 && status.relay2 !== undefined && status.relay2 === lastKnown2) {
+          // still catching up
+        } else {
+          pending2 = false;
+        }
+        lastKnown1 = !!status.relay1;
+        lastKnown2 = !!status.relay2;
+      }
+      renderRelays();
 
-    // --- DASHBOARD DATA LOGIC ---
-    function startDashboardListeners() {
-        // 1. Image Auto-Updater (Listens to the exact path used by your Google Apps Script)
-        database.ref('system_state/latest_image').on('value', (snapshot) => {
-            const imageUrl = snapshot.val();
-            if (imageUrl) {
-                document.getElementById('live-camera').src = imageUrl;
-            }
-        });
+      const connDot = document.getElementById("connDot");
+      const connText = document.getElementById("connText");
+      const lastSeen = state && state.telemetry_last_seen ? state.telemetry_last_seen : 0;
+      const online = Date.now() - lastSeen < 15000;
+      connDot.className = "dot " + (online ? "online" : "offline");
+      connText.textContent = online ? "Hub online" : "Hub offline";
 
-        // 2. Hardware Toggles Reader
-        ['fan', 'light'].forEach(device => {
-            database.ref('hardware/' + device).on('value', (snapshot) => {
-                const state = snapshot.val();
-                const btn = document.getElementById(device + '-btn');
-                
-                // Real-time button UI updates
-                if (state === true) {
-                    btn.className = 'toggle-btn btn-on';
-                    btn.innerText = (device === 'fan' ? 'Exhaust Fan' : 'Strobe Light') + ': ON';
-                } else {
-                    btn.className = 'toggle-btn btn-off';
-                    btn.innerText = (device === 'fan' ? 'Exhaust Fan' : 'Strobe Light') + ': OFF';
-                }
-            });
-        });
+      const gasValue = document.getElementById("gasValue");
+      const gas = state && state.gas_level !== undefined ? state.gas_level : null;
+      gasValue.textContent = gas !== null ? gas : "—";
+      gasValue.className = "metric-value " + (gas !== null && gas > 2000 ? "warn" : "safe");
+
+      const alertValue = document.getElementById("alertValue");
+      const alertBanner = document.getElementById("alertBanner");
+      const alertText = document.getElementById("alertText");
+      const type = state && state.alert_type ? state.alert_type : null;
+      alertValue.textContent = type || "None";
+
+      if (type && lastSeen && Date.now() - lastSeen < 60000) {
+        alertBanner.style.display = "flex";
+        alertText.textContent = type + " alert active — check site immediately";
+      } else {
+        alertBanner.style.display = "none";
+      }
+
+      const imageCard = document.getElementById("imageCard");
+      const latestImage = document.getElementById("latestImage");
+      if (state && state.latest_image && state.latest_image.startsWith("http")) {
+        latestImage.src = state.latest_image;
+        imageCard.style.display = "block";
+      }
+    } catch (e) {
+      document.getElementById("connText").textContent = "Connection error";
+      document.getElementById("connDot").className = "dot offline";
     }
+  }
 
-    // Hardware Toggle Sender (Pushes to Firebase Database, Main ESP32 reads it instantly)
-    function toggleHardware(device) {
-        const ref = database.ref('hardware/' + device);
-        ref.once('value').then((snapshot) => {
-            const currentState = snapshot.val() || false;
-            ref.set(!currentState); 
-        });
-    }
-
-    // --- GOOGLE APPS SCRIPT EMAIL SUBMISSION ---
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbydQafVlc5MA1BdochHFu80LFuo2ZGq3eJFVOkOjxJZHRiJZRvM2Rgt0iI22Aa9gBektA/exec";
-
-    document.getElementById('email-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const emailInput = document.getElementById('email-input');
-        const email = emailInput.value;
-        const btn = this.querySelector('button');
-        
-        btn.innerText = "Sending...";
-        btn.disabled = true;
-        
-        // mode: 'no-cors' prevents browser security blocks when posting to Google Scripts
-        fetch(googleScriptUrl, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'email=' + encodeURIComponent(email)
-        }).then(() => {
-            // no-cors means we get an opaque response, so we assume success if no network error thrown
-            document.getElementById('success-msg').style.display = 'block';
-            emailInput.value = '';
-            btn.innerText = "Add";
-            btn.disabled = false;
-            setTimeout(() => { document.getElementById('success-msg').style.display = 'none'; }, 4000);
-        }).catch(err => {
-            alert("Network error. Could not reach Google Sheets.");
-            btn.innerText = "Add";
-            btn.disabled = false;
-        });
-    });
+  renderRelays();
+  poll();
+  setInterval(poll, 3000);
 </script>
-
 </body>
 </html>
